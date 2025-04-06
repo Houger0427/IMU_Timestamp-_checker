@@ -1,0 +1,100 @@
+import pandas as pd
+import numpy as np
+import os
+
+
+def ensure_dir(file_path):
+    """檢查檔案的目錄是否存在，若不存在則自動建立"""
+    directory = os.path.dirname(file_path)
+    if directory and not os.path.exists(directory):
+        os.makedirs(directory)
+
+
+def flatten_imu_data(df: pd.DataFrame):
+    imu_column = ['accX', 'accY', 'accZ', 'gyroX', 'gyroY', 'gyroZ']
+    df_imu = pd.DataFrame()
+    df_imu['ts'] = df['time'].repeat(5).reset_index(drop=True)
+
+    for c in imu_column:
+        flattened_signal = np.array(
+            df[[x for x in df.columns if c in x]]
+            .values
+            .flatten('C')
+        )
+        df_imu[c] = flattened_signal
+
+    print('flattened signal length:', len(df_imu))
+    return df_imu
+
+
+def convert_ts_to_datetime(ts_series):
+    return pd.to_datetime(ts_series, unit='ms')
+
+
+def process_folder(input_folder, output_folder):
+    ensure_dir(output_folder + '/dummy.csv')
+
+    for filename in os.listdir(input_folder):
+        if filename.lower().endswith('.csv'):
+            input_path = os.path.join(input_folder, filename)
+            output_path = os.path.join(output_folder, filename)
+
+            try:
+                print(f"\n📂 正在處理檔案：{filename}")
+
+                # Step 1: 讀取 CSV
+                df = pd.read_csv(input_path)
+                print(f"✅ 成功讀取 {filename}，共 {len(df)} 列")
+
+                # 檢查 time 欄位是否存在
+                if 'time' not in df.columns:
+                    raise ValueError(f"❌ 檔案缺少 'time' 欄位，無法展平：{filename}")
+
+                # Step 2: 展平資料
+                flattened_df = flatten_imu_data(df)
+                print(f"✅ 展平完成，共 {len(flattened_df)} 筆")
+                if flattened_df.empty:
+                    print("⚠️ 展平後的資料為空，未儲存檔案")
+
+                # Step 3: timestamp 轉換
+                flattened_df['ts_datetime'] = convert_ts_to_datetime(
+                    flattened_df['ts']
+                )
+                print("✅ timestamp 轉換成功")
+
+                # Step 4: 時間長度
+                ts_start = flattened_df['ts'].iloc[0]
+                ts_end = flattened_df['ts'].iloc[-1]
+                time_span_seconds = (ts_end - ts_start) / 1000.0
+                print(f"📏 時間區間: {time_span_seconds:.2f} 秒")
+
+                # Step 5: 筆數估計
+                accX_len = len(flattened_df['accX'])
+                actual_samples = accX_len / 52
+                print(f"🧾 實際資料筆數: {actual_samples:.2f}")
+
+                # Step 6: 儲存檔案
+                if flattened_df.empty:
+                    print("⚠️ 展平後的資料為空，未儲存檔案")
+                else:
+                    flattened_df.to_csv(output_path, index=False)
+                    print(f"✅ 已輸出 CSV 至：{output_path}")
+
+                    if os.path.exists(output_path):
+                        print(
+                            f"🗂️ 實際確認：檔案存在，大小 "
+                            f"{os.path.getsize(output_path)} bytes"
+                        )
+                    else:
+                        print("❌ 寫檔失敗（找不到檔案）")
+
+            except Exception as e:
+                print(f"❌ 錯誤處理檔案 {filename}：{e}")
+
+
+input_folder = input("請輸入【輸入資料夾】路徑（可拖曳資料夾進來）: ").strip().strip('"')
+output_folder = input("請輸入【輸出資料夾】路徑（將儲存處理後的資料）: ").strip().strip('"')
+
+
+print("偵測到以下 CSV 檔案：")
+print([f for f in os.listdir(input_folder) if f.lower().endswith('.csv')])
