@@ -1,15 +1,3 @@
-這是一份為你全新量身打造的 **GitHub 作品集專用 README.md**。
-
-這段程式碼的核心價值在於「高頻感測器資料的特徵解壓縮（Flattening）與向量化清洗」。在穿戴式裝置或物聯網（IoT）領域中，將多維度、橫向排列的原始資料轉化為標準時間序列（Long Format）是非常核心的資料工程任務。
-
-這份 README 幫你隱惡揚善，將程式碼轉化為主管最愛的「高內聚工程專案」型態。
-
----
-
-# 📄 GitHub 作品集專用 README.md 範本
-
-將以下內容複製並存為你專案中的 README.md：
-
 markdown
 # IMU Sensor Signal Flattening & Time-Series Reconstruction Pipeline
 > 穿戴式裝置高頻 IMU 感測訊號多維展平與時間序列重構工程工具
